@@ -528,6 +528,21 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 6204502190033912016, guid: db74822a0c3f0b640a96ae1a8b96e19f,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6204502190033912016, guid: db74822a0c3f0b640a96ae1a8b96e19f,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6204502190033912016, guid: db74822a0c3f0b640a96ae1a8b96e19f,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3628008049065787172, guid: db74822a0c3f0b640a96ae1a8b96e19f,
         type: 3}
       propertyPath: m_RootOrder
@@ -733,30 +748,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8afe3e0ddc88cd34d823148382642b7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bigObjList: []
-  mediumObjList: []
-  smallObjList: []
-  coversCombined: []
+  health: 100
+  test: 0
+  dead: 0
   allyAgents: []
   player: {fileID: 0}
-  currentCover: {fileID: 0}
-  nextCover: {fileID: 0}
-  lastCollidedWith: {fileID: 0}
-  underAttack: 0
-  attackingPlayer: 0
-  playerVisible: 0
-  attackingPlayerCover: 0
-  coverAttack: 0
-  playerMovingTowards: 0
-  flankingPlayer: 0
-  moveToCover: 0
-  crouching: 0
-  standing: 0
-  hiding: 0
-  collidedNxtCover: 0
-  jump: 0
-  move: 0
-  hold: 0
   bloodParticle: {fileID: 0}
   shootingParticle: {fileID: 0}
   actionText: {fileID: 0}
@@ -790,6 +786,78 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.42, y: 0.31, z: 0.85}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &142656128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142656123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d978ae0d0c46924696d1c25f472121b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decisionSpeed: 0
+  fear: 50
+  confidence: 50
+  adrenaline: 0
+  underAttack: 0
+  coverUnderAttack: 0
+  flankPlayer: 0
+  moveToCover: 0
+  returnToCover: 0
+  hide: 0
+  attackFromCover: 0
+  attackPlayerCover: 0
+  attackPlayer: 0
+  playerVisible: 0
+  playerMovingTowards: 0
+  addCover: 0
+--- !u!114 &142656129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142656123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9d26492d10d3f84c9c476902cf34479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movePathList: []
+  currentPos: {x: 0, y: 0, z: 0}
+  currentRot: {x: 0, y: 0, z: 0, w: 0}
+  move: 0
+  hold: 0
+  jump: 0
+  inAir: 0
+  crouch: 0
+  stand: 0
+--- !u!114 &142656130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142656123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36fdb426ebd351845b30e07f30ed9176, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bigObjList: []
+  smallObjList: []
+  coversCombined: []
+  visitedCovers: []
+  currentCover: {fileID: 0}
+  nextCover: {fileID: 0}
+  lastCollidedWith: {fileID: 0}
+  player: {fileID: 0}
+  inCollisionTime: 0
+  collidedNxtCover: 0
+  movingToCover: 0
 --- !u!1 &146411866
 GameObject:
   m_ObjectHideFlags: 0
