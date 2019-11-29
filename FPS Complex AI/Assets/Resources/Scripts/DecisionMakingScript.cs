@@ -6,14 +6,18 @@ public class DecisionMakingScript : MonoBehaviour
 {
     CoverFinderScript coverFinder;
     MovementScript movementScript;
+    AgentScript agentScript;
 
+    public List<GameObject> allyAgents;
+
+    int noOfAllies = 0;
     public int decisionSpeed = 0;
-    public int fear = 50;
-    public int confidence = 50;
-    public int adrenaline = 0;
 
+    // ALARMS
     public bool underAttack;
     public bool coverUnderAttack;
+    public bool outOfAmmo;
+    
     public bool flankPlayer;
 
     public bool moveToCover;
@@ -25,12 +29,17 @@ public class DecisionMakingScript : MonoBehaviour
     public bool attackPlayer;
     public bool playerVisible;
     public bool playerMovingTowards;
+    public bool moveToPlayer;
 
     public bool addCover = false;
+    public bool previousDecisionFinished = false;
 
     private Vector3 coverOffset = new Vector3(3, 0, 0);
+    private float decisionTimer;
+
     public void MoveToCover()
     {
+        agentScript.ChangeActionText("Moving to cover");
         Debug.Log("Adding cover " + coverFinder.GetClosestCoverToHide().name);
         coverFinder.movingToCover = true;
         movementScript.AddPointToList(coverFinder.GetClosestCoverToHide().transform.position - coverOffset);
@@ -38,6 +47,7 @@ public class DecisionMakingScript : MonoBehaviour
     
     public void ReturnToCover()
     {
+        agentScript.ChangeActionText("Returning to previous cover");
         Debug.Log("Returning to previous cover if exists - " + coverFinder.currentCover.name);
         if(coverFinder.currentCover != null)
         {
@@ -50,26 +60,59 @@ public class DecisionMakingScript : MonoBehaviour
 
     public void AttackPlayerCover()
     {
-
+        agentScript.ChangeActionText("Attacking Player's Cover");
+        agentScript.shoot = true;
     }
 
     public void AttackPlayer()
     {
-        // gun shot sound https://www.youtube.com/watch?v=gFGVCCg9Y44
+        agentScript.ChangeActionText("Attacking Player");
+        agentScript.shoot = true;
     }
 
-    // Start is called before the first frame update
-    void Start()
+    public bool IsCoverInUse(GameObject cover)
     {
-        coverFinder = gameObject.GetComponent<CoverFinderScript>();
-        movementScript = gameObject.GetComponent<MovementScript>();
+        for (int i = 0; i < allyAgents.Count; i++)
+        {
+            CoverFinderScript coverFinder = allyAgents[i].GetComponent<CoverFinderScript>();
+            if (coverFinder.currentCover == cover)
+                return true;
+        }
+
+        return false;
     }
 
     // MAKE SMTHG LIKE WHILE LOOP TO PERFORM DECISIONS (IN COROUTINE?) AND HAVE ALERTS BREAK IT.
 
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        // Getting all allied AI units.
+        allyAgents = new List<GameObject>();
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Enemy");
+        for (int i = 0; i < agents.Length; i++)
+            allyAgents.Add(agents[i]);
+
+        coverFinder = gameObject.GetComponent<CoverFinderScript>();
+        movementScript = gameObject.GetComponent<MovementScript>();
+        agentScript = gameObject.GetComponent<AgentScript>();
+
+        decisionTimer = 0.0f;
+    }
+
     // Update is called once per frame
     void Update()
     {
+        // DEALING WITH ALARMS FIRST 
+        /*if()
+        
+        underAttack;
+        coverUnderAttack;
+        outOfAmmo;
+    */
+
+
         if (moveToCover)
         {
             if (addCover)

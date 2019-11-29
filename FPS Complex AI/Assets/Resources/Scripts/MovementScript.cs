@@ -6,7 +6,7 @@ public class MovementScript : MonoBehaviour
 {
     AgentScript agentScript;
 
-    int movementSpeed = 10;
+    public int movementSpeed = 10;
 
     public List<Vector3> movePathList;
     public Vector3 currentPos;
@@ -21,6 +21,7 @@ public class MovementScript : MonoBehaviour
 
     public void JumpOnObject(GameObject objectToJumpOn)
     {
+        agentScript.ChangeActionText("Jumping on object");
         Vector3 desiredPos = new Vector3(currentPos.x, currentPos.y + objectToJumpOn.GetComponent<BoxCollider>().bounds.size.y, currentPos.z);
 
         transform.position = Vector3.Lerp(currentPos, desiredPos, 1);

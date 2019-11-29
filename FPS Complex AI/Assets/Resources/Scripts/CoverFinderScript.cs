@@ -135,6 +135,9 @@ public class CoverFinderScript : MonoBehaviour
             if (coversCombined[i] == currentCover)
                 continue;
 
+            if (decisionScript.IsCoverInUse(coversCombined[i]))
+                continue;
+
             bool breakLoop = false;
 
             // Don't go if previously visited
