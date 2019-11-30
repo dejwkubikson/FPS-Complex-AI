@@ -6,6 +6,7 @@ using TMPro;
 //x -84.23, y 4.3917, z 5.2
 public class AgentScript : MonoBehaviour
 {
+    public bool visible;
     public int health = 100;
     public int damage = 5;
     public int accuracy = 30; // percentage of bullets that may hit the player - 30% at normal behaviour
@@ -14,6 +15,7 @@ public class AgentScript : MonoBehaviour
     public bool dead;
 
     public GameObject player;
+    public PlayerScript playerScript;
 
     public ParticleSystem bloodParticle;
     public ParticleSystem shootingParticle;
@@ -35,6 +37,40 @@ public class AgentScript : MonoBehaviour
     private int clipAmount = 30;
     private int ammo = 30;
     private bool reloading = false;
+    public bool attackCover;
+
+    private bool VisibleByPlayer()
+    {
+        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(GameObject.Find("FirstPersonCharacter").GetComponent<Camera>());
+        if (GeometryUtility.TestPlanesAABB(planes, gameObject.GetComponent<Collider>().bounds))
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(transform.position, (player.transform.position - transform.position), out hit))
+            {
+                if (hit.transform.gameObject == player)
+                    return true;
+                else
+                {
+                    if (hit.transform.gameObject.CompareTag("Small Object"))
+                    {
+                        if (playerScript.crouching == false)
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        Debug.Log("Another object seperating me from player: " + hit.transform.gameObject.name);
+                        return false;
+                    }
+                }
+            }
+            else
+                return false;
+        }
+        else
+            return false;
+    }
 
     public void ChangeActionText(string text)
     {
@@ -44,7 +80,11 @@ public class AgentScript : MonoBehaviour
     public void ReceiveDamage(int amount)
     {
         bloodParticle.Play();
-        health -= amount;
+        if (dead == false)
+        {
+            audioSource.PlayOneShot(hitSound);
+            health -= amount;
+        }
     }
 
     private void Die()
@@ -76,12 +116,23 @@ public class AgentScript : MonoBehaviour
         currentCoolDown = 0.0f;
         ammo--;
 
+        if(attackCover)
+        {
+            if (playerScript.playerCover != null)
+            {
+                if (playerScript.playerCover.transform.parent.name == "Crates")
+                {
+                    playerScript.playerCover.transform.GetChild(1).GetComponent<ParticleSystem>().Play();
+                    playerScript.playerCover.GetComponent<AudioSource>().Play();
+                }
+            }
+        }
+
         /*int random = Random.Range(0, 101);
         if(random <= accuracy)
         {
             player.GetComponent<PlayerScript>().ReceiveDamage(damage);
         }*/
-
     }
 
     IEnumerator Reload()
@@ -106,11 +157,12 @@ public class AgentScript : MonoBehaviour
 
         // Getting player object.
         player = GameObject.FindGameObjectWithTag("Player");
+        playerScript = player.GetComponent<PlayerScript>();
 
         audioSource = gameObject.GetComponent<AudioSource>();
         shotSound = Resources.Load<AudioClip>("Sounds/gunshot_sound");
         reloadSound = Resources.Load<AudioClip>("Sounds/reload_sound");
-        hitSound = Resources.Load<AudioClip>("hit_sound");
+        hitSound = Resources.Load<AudioClip>("Sounds/hit_sound");
 
         shoot = false;
         currentCoolDown = 0.0f;
@@ -119,10 +171,17 @@ public class AgentScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!(dead))
+            currentPos = gameObject.transform.position;
+        else
+            return;
+
         Debug.DrawRay(gameObject.transform.position, gameObject.transform.right * 4, Color.red, 0.5f);
 
-        if(!(dead))
-            currentPos = gameObject.transform.position;
+        if (VisibleByPlayer())
+            visible = true;
+        else
+            visible = false;
 
         if(test)
         {
