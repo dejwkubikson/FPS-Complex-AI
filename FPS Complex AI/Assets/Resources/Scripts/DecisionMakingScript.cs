@@ -7,8 +7,6 @@ public class DecisionMakingScript : MonoBehaviour
     CoverFinderScript coverFinder;
     MovementScript movementScript;
     AgentScript agentScript;
-    PlayerScript playerScript;
-    public GameObject player;
 
     public List<GameObject> allyAgents;
 
@@ -38,7 +36,6 @@ public class DecisionMakingScript : MonoBehaviour
 
     private Vector3 coverOffset = new Vector3(3, 0, 0);
     private float decisionTimer;
-
 
     public void MoveToCover()
     {
@@ -72,7 +69,7 @@ public class DecisionMakingScript : MonoBehaviour
         agentScript.ChangeActionText("Attacking Player");
         agentScript.shoot = true;
     }
-    
+
     public bool IsCoverInUse(GameObject cover)
     {
         for (int i = 0; i < allyAgents.Count; i++)
@@ -102,9 +99,6 @@ public class DecisionMakingScript : MonoBehaviour
         agentScript = gameObject.GetComponent<AgentScript>();
 
         decisionTimer = 0.0f;
-
-        player = GameObject.FindGameObjectWithTag("Player");
-        playerScript = player.GetComponent<PlayerScript>();
     }
 
     // Update is called once per frame
@@ -117,7 +111,6 @@ public class DecisionMakingScript : MonoBehaviour
         coverUnderAttack;
         outOfAmmo;
     */
-        
 
 
         if (moveToCover)

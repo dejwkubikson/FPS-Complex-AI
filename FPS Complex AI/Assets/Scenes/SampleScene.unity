@@ -763,14 +763,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8afe3e0ddc88cd34d823148382642b7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visible: 0
   health: 100
   damage: 5
   accuracy: 0
   test: 0
   dead: 0
   player: {fileID: 0}
-  playerScript: {fileID: 0}
   bloodParticle: {fileID: 0}
   shootingParticle: {fileID: 0}
   actionText: {fileID: 0}
@@ -778,7 +776,6 @@ MonoBehaviour:
   shoot: 0
   reload: 0
   shootCoolDown: 2
-  attackCover: 0
 --- !u!54 &142656126
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -820,7 +817,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d978ae0d0c46924696d1c25f472121b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
   allyAgents: []
   decisionSpeed: 0
   underAttack: 0
@@ -1394,17 +1390,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6cba1ef57efea344b04973176e928ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackedCover: {fileID: 0}
-  shootCoolDown: 0.1
-  attackCoolDown: 3
-  accuracy: 30
-  crouching: 0
-  nearCover: 0
-  playerCover: {fileID: 0}
+  shootCoolDown: 0.6
   bloodParticle: {fileID: 0}
   shootingParticle: {fileID: 0}
   ammoText: {fileID: 0}
-  coversCombined: []
 --- !u!1001 &369768336
 PrefabInstance:
   m_ObjectHideFlags: 0
