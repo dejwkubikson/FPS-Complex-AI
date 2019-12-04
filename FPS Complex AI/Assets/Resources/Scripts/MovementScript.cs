@@ -84,6 +84,9 @@ public class MovementScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (agentScript.dead)
+            return;
+
         currentPos = gameObject.transform.position;
         currentRot = gameObject.transform.rotation;
 

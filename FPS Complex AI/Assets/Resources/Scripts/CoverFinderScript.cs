@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CoverFinderScript : MonoBehaviour
 {
-    DecisionMakingScript decisionScript;
+    firstTreeDecisionMakingScript firstTreeDecisionScript;
     
     public List<GameObject> bigObjList;
     public List<GameObject> smallObjList;
@@ -19,6 +19,7 @@ public class CoverFinderScript : MonoBehaviour
 
     public bool collidedNxtCover;
     public bool movingToCover = false;
+    public bool nearCover = false;
 
     MovementScript movementScript;
 
@@ -32,7 +33,7 @@ public class CoverFinderScript : MonoBehaviour
             nextCover = null;
             visitedCovers.Add(currentCover);
             movingToCover = false;
-            decisionScript.moveToCover = false;
+            firstTreeDecisionScript.moveToCover = false;
             return;
         }
     }
@@ -87,7 +88,7 @@ public class CoverFinderScript : MonoBehaviour
         bool objOnRight = false;
 
         int pathPick = 1;
-        if (objectToAvoid.CompareTag("Small Object"))
+        if (objectToAvoid.CompareTag("Small Object") && movementScript.crouch == false)
             pathPick = Random.Range(1, 3);
         
         switch(pathPick)
@@ -135,7 +136,7 @@ public class CoverFinderScript : MonoBehaviour
             if (coversCombined[i] == currentCover)
                 continue;
 
-            if (decisionScript.IsCoverInUse(coversCombined[i]))
+            if (firstTreeDecisionScript.IsCoverInUse(coversCombined[i]))
                 continue;
 
             bool breakLoop = false;
@@ -205,12 +206,12 @@ public class CoverFinderScript : MonoBehaviour
 
         player = GameObject.FindGameObjectWithTag("Player");
 
-        decisionScript = gameObject.GetComponent<DecisionMakingScript>();
+        firstTreeDecisionScript = gameObject.GetComponent<firstTreeDecisionMakingScript>();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        //Debug.Log(GetClosestCoverToHide().name);
+        if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 5 || Vector3.Distance(gameObject.transform.position, currentCover.transform.position) < 5)
+            nearCover = true;
     }
 }

@@ -8,9 +8,10 @@ public class PlayerScript : MonoBehaviour
     int health = 100;
     int damage = 10;
     public GameObject attackedCover;
+    public GameObject attackedAgent;
     public float shootCoolDown = 0.1f;
     public float shootingTime = 0.0f;
-    public int attackCoolDown = 3;
+    public int attackCoolDown = 5;
     public float accuracy = 30;
     public bool crouching;
     public bool nearCover;
@@ -66,6 +67,13 @@ public class PlayerScript : MonoBehaviour
         attackedCover = cover;
         yield return new WaitForSeconds(attackCoolDown);
         attackedCover = null;
+    }
+
+    IEnumerator AttackingAgent(GameObject agent)
+    {
+        attackedAgent = agent;
+        yield return new WaitForSeconds(attackCoolDown);
+        attackedAgent = null;
     }
 
     public void CheckIfNearCover()
@@ -147,6 +155,8 @@ public class PlayerScript : MonoBehaviour
                         GameObject hitObject = hit.collider.gameObject;
                         if (hitObject.CompareTag("Enemy"))
                         {
+                            StartCoroutine(AttackingAgent(hitObject.gameObject));
+
                             AgentScript agentScript = hitObject.GetComponent<AgentScript>();
                             if (agentScript == null)
                                 return;

@@ -13,14 +13,31 @@ public class EmotionScript : MonoBehaviour
     private bool fearful = false;
     private bool onAdrenaline = false;
 
-    DecisionMakingScript decisionMaking;
+    private bool fearCool = false;
+    private bool adrenalineCool = false;
+
+    private int emotionCoolDown = 1;
+
+    firstTreeDecisionMakingScript firstTreeDecisionMaking;
     MovementScript movementScript;
     AgentScript agentScript;
+
+    public States currentState;
+
+    public enum States
+    {
+        confidentState,
+        fearfulState,
+        rageState,
+        determinedState,
+        normalState
+    }
 
     // High confidence - 80%+
     public void Confident()
     {
-        decisionMaking.decisionSpeed = 5;
+        currentState = States.confidentState;
+        firstTreeDecisionMaking.firstTreeDecisionSpeed = 5;
         movementScript.movementSpeed = 15;
         agentScript.accuracy = 65;
         agentScript.shootCoolDown = 0.8f;
@@ -29,7 +46,8 @@ public class EmotionScript : MonoBehaviour
     // High fear - 80%+
     public void Fearful()
     {
-        decisionMaking.decisionSpeed = 15;
+        currentState = States.fearfulState;
+        firstTreeDecisionMaking.firstTreeDecisionSpeed = 15;
         movementScript.movementSpeed = 5;
         agentScript.accuracy = 5;
         agentScript.shootCoolDown = 0.2f; // full auto due to fear
@@ -38,7 +56,8 @@ public class EmotionScript : MonoBehaviour
     // High fear and adrenaline - 80%+
     public void Rage()
     {
-        decisionMaking.decisionSpeed = 3;
+        currentState = States.rageState;
+        firstTreeDecisionMaking.firstTreeDecisionSpeed = 3;
         movementScript.movementSpeed = 20;
         agentScript.accuracy = 3;
         agentScript.shootCoolDown = 0.2f; // full auto due to fear
@@ -47,7 +66,8 @@ public class EmotionScript : MonoBehaviour
     // High confidence and adrenaline - 80%+
     public void Determinated()
     {
-        decisionMaking.decisionSpeed = 4;
+        currentState = States.determinedState;
+        firstTreeDecisionMaking.firstTreeDecisionSpeed = 4;
         movementScript.movementSpeed = 15;
         agentScript.accuracy = 50;
         agentScript.shootCoolDown = 0.4f;
@@ -55,16 +75,34 @@ public class EmotionScript : MonoBehaviour
 
     public void Normal()
     {
-        decisionMaking.decisionSpeed = 7;
+        currentState = States.normalState;
+        firstTreeDecisionMaking.firstTreeDecisionSpeed = 7;
         movementScript.movementSpeed = 10;
         agentScript.accuracy = 30;
         agentScript.shootCoolDown = 1;
     }
 
+    IEnumerator FearCoolDown()
+    {
+        fearCool = true;
+        yield return new WaitForSeconds(emotionCoolDown);
+        fear -= 1;
+        confidence = 100 - fear;
+        fearCool = false;
+    }
+
+    IEnumerator AdrenalineCoolDown()
+    {
+        adrenalineCool = true;
+        yield return new WaitForSeconds(emotionCoolDown);
+        adrenaline -= 1;
+        adrenalineCool = false;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        decisionMaking = gameObject.GetComponent<DecisionMakingScript>();
+        firstTreeDecisionMaking = gameObject.GetComponent<firstTreeDecisionMakingScript>();
         movementScript = gameObject.GetComponent<MovementScript>();
         agentScript = gameObject.GetComponent<AgentScript>();
     }
@@ -72,6 +110,12 @@ public class EmotionScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (fearCool == false && fear > 0)
+            StartCoroutine(FearCoolDown());
+
+        if (adrenalineCool == false && adrenaline > 0)
+            StartCoroutine(AdrenalineCoolDown());
+
         if (confidence > 80)
             confident = true;
         else

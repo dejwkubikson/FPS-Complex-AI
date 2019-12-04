@@ -6,12 +6,12 @@ using TMPro;
 //x -84.23, y 4.3917, z 5.2
 public class AgentScript : MonoBehaviour
 {
-    public bool visible;
+    public bool playerVisible;
+    public bool playerCoverVisible;
     public int health = 100;
     public int damage = 5;
     public int accuracy = 30; // percentage of bullets that may hit the player - 30% at normal behaviour
 
-    public bool test = false;
     public bool dead;
 
     public GameObject player;
@@ -35,11 +35,11 @@ public class AgentScript : MonoBehaviour
     AudioSource audioSource;
 
     private int clipAmount = 30;
-    private int ammo = 30;
+    public int ammo = 30;
     private bool reloading = false;
     public bool attackCover;
-
-    private bool VisibleByPlayer()
+    
+    private bool PlayerVisible()
     {
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(GameObject.Find("FirstPersonCharacter").GetComponent<Camera>());
         if (GeometryUtility.TestPlanesAABB(planes, gameObject.GetComponent<Collider>().bounds))
@@ -53,14 +53,22 @@ public class AgentScript : MonoBehaviour
                 {
                     if (hit.transform.gameObject.CompareTag("Small Object"))
                     {
+                        playerCoverVisible = true;
+
                         if (playerScript.crouching == false)
                             return true;
+                        
                         else
                             return false;
+                        
                     }
                     else
                     {
                         Debug.Log("Another object seperating me from player: " + hit.transform.gameObject.name);
+                        if (hit.transform.gameObject == playerScript.playerCover)
+                            playerCoverVisible = true;
+                        else
+                            playerCoverVisible = false;
                         return false;
                     }
                 }
@@ -90,7 +98,7 @@ public class AgentScript : MonoBehaviour
     private void Die()
     {
         // Disabling all scripts
-        gameObject.GetComponent<DecisionMakingScript>().enabled = false;
+        gameObject.GetComponent<firstTreeDecisionMakingScript>().enabled = false;
         gameObject.GetComponent<MovementScript>().enabled = false;
         gameObject.GetComponent<CoverFinderScript>().enabled = false;
         gameObject.GetComponent<Rigidbody>().isKinematic = true;
@@ -178,16 +186,10 @@ public class AgentScript : MonoBehaviour
 
         Debug.DrawRay(gameObject.transform.position, gameObject.transform.right * 4, Color.red, 0.5f);
 
-        if (VisibleByPlayer())
-            visible = true;
+        if (PlayerVisible())
+            playerVisible = true;
         else
-            visible = false;
-
-        if(test)
-        {
-            ReceiveDamage(50);
-            test = false;
-        }
+            playerVisible = false;
 
         if (health <= 0)
         {
