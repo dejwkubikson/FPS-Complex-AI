@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class firstTreeDecisionMakingScript : MonoBehaviour
+public class DecisionMakingScript : MonoBehaviour
 {
     CoverFinderScript coverFinder;
     MovementScript movementScript;
@@ -14,13 +14,14 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
     public List<GameObject> allyAgents;
 
     int noOfAllies = 0;
-    public int firstTreeDecisionSpeed = 0;
+    public int decisionSpeed = 7;
 
     // ALARMS
     public bool underAttack;
     public bool coverUnderAttack;
     public bool outOfAmmo;
     private bool alarm;
+    private float alarmCoolDown = 5.0f;
     
     public bool flankPlayer;
 
@@ -40,27 +41,30 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
     public bool move;
 
     public bool addCover = false;
-    public bool previousfirstTreeDecisionFinished = false;
+    public bool previousDecisionFinished = false;
 
-    private Vector3 coverOffset = new Vector3(3, 0, 0);
-    private float firstTreeDecisionTimer = 3.0f;
+    private Vector3 coverOffset = new Vector3(3.5f, -4, 0);
+    public float decisionTimer = 7.0f;
 
+    public bool alarmActionTaken = false;
+    public int firstTreeDecision;
+    public int secondTreeDecision;
 
     public void MoveToCover()
     {
         agentScript.ChangeActionText("Moving to cover");
-        Debug.Log("Adding cover " + coverFinder.GetClosestCoverToHide().name);
-        coverFinder.movingToCover = true;
+        //coverFinder.movingToCover = true;
         movementScript.AddPointToList(coverFinder.GetClosestCoverToHide().transform.position - coverOffset);
     }
     
     public void ReturnToCover()
     {
         agentScript.ChangeActionText("Returning to previous cover");
-        Debug.Log("Returning to previous cover if exists - " + coverFinder.currentCover.name);
+        //Debug.Log("Returning to previous cover if exists - " + coverFinder.currentCover.name);
         if(coverFinder.currentCover != null)
         {
             moveToCover = false;
+            //coverFinder.movingToCover = true;
             movementScript.RemoveFirstPoint();
             coverFinder.nextCover = coverFinder.currentCover;
             movementScript.AddPointToList(coverFinder.currentCover.transform.position - coverOffset);
@@ -103,6 +107,31 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
         return false;
     }
 
+    public void ClearActions()
+    {
+        decisionTimer = 0;
+
+        underAttack = false;
+        coverUnderAttack = false;
+        outOfAmmo = false;
+        hide = false;
+
+        returnToCover = false;
+        moveToCover = false;
+        addCover = false;
+        attackPlayer = false;
+        attackPlayerCover = false;
+
+        attack = false;
+        move = false;
+        defend = false;
+        attackFromCover = false;
+
+        agentScript.attackPlayer = false;
+        agentScript.attackCover = false;
+        agentScript.shoot = false;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -116,11 +145,11 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
         movementScript = gameObject.GetComponent<MovementScript>();
         agentScript = gameObject.GetComponent<AgentScript>();
         emotion = gameObject.GetComponent<EmotionScript>();
-
-        firstTreeDecisionTimer = 0.0f;
-
+        
         player = GameObject.FindGameObjectWithTag("Player");
         playerScript = player.GetComponent<PlayerScript>();
+
+        decisionTimer = 0.0f;
     }
 
     // Update is called once per frame
@@ -129,66 +158,116 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
         if (agentScript.dead)
             return;
 
-        firstTreeDecisionTimer += Time.deltaTime;
+        decisionTimer += Time.deltaTime;
 
         if (playerScript.attackedAgent == this.gameObject)
         {
             underAttack = true;
             alarm = true;
+            Debug.Log("underAttack");
         }
         if (playerScript.attackedCover == coverFinder.currentCover && coverFinder.nearCover)
         {
             coverUnderAttack = true;
             alarm = true;
+            Debug.Log("coverUnderAttack");
         }
         if (agentScript.ammo <= 0)
         {
             outOfAmmo = true;
             alarm = true;
+            Debug.Log("outOfAmmo");
         }
 
-        // Stoping the loop if alarm is not on or if the not enough time elapsed to make firstTreeDecision
+        if (alarm && alarmCoolDown >= 0)
+            alarmCoolDown -= Time.deltaTime;
+        else
+        {
+            alarm = false;
+            alarmActionTaken = false;
+            alarmCoolDown = 5;
+        }
+
+        if (agentScript.playerVisible)
+        {
+            attack = true;
+            alarm = true;
+            Debug.Log("playerVisible");
+        }
+
+        if(agentScript.attackCover && playerScript.playerCover == null)
+        {
+            agentScript.attackCover = false;
+            agentScript.shoot = false;
+        }
+
+        // Stoping the loop if alarm is not on or if the not enough time elapsed to make decision
+        if (alarm == false && decisionSpeed > decisionTimer)
+            return;
+        else
+        if (decisionSpeed <= decisionTimer)
+            ClearActions();
+
+        /*
         if (alarm == false)
-            if (firstTreeDecisionSpeed > firstTreeDecisionTimer)
+            if (decisionSpeed > decisionTimer)
                 return;
+
+        ClearActions();*/
 
         // ALARMS
         if(underAttack)
         {
             // Checking which cover is closer to agent, previous or the chosen one
-            if (Vector3.Distance(gameObject.transform.position, coverFinder.currentCover.transform.position) < Vector3.Distance(gameObject.transform.position, coverFinder.nextCover.transform.position))
-                returnToCover = true;
+            if (coverFinder.currentCover != null && coverFinder.nextCover != null)
+            {
+                if (coverFinder.nearCover == false)
+                {
+                    if (Vector3.Distance(gameObject.transform.position, coverFinder.currentCover.transform.position) < Vector3.Distance(gameObject.transform.position, coverFinder.nextCover.transform.position))
+                        returnToCover = true;
+                    else
+                        moveToCover = true;
+                }
+            }
             else
             if (coverFinder.nextCover == null)
-            {
                 moveToCover = true;
-                addCover = true;
-            }
 
             hide = true;
         }
 
-        if(coverUnderAttack)
+        if (coverUnderAttack)
+        {
             hide = true;
+            attack = false;
+            movementScript.crouch = true;
+        }
 
         if(outOfAmmo)
         {
             agentScript.reload = true;
             attackPlayer = false;
+            agentScript.attackPlayer = false;
             attackPlayerCover = false;
+            agentScript.attackCover = false;
+            attack = false;
 
             hide = true;
         }
 
-        if(coverFinder.nearCover && hide)
+        if(coverFinder.nearCover && hide && attack == false)
         {
-            if (coverFinder.currentCover.CompareTag("Small Object"))
-                movementScript.crouch = true;
+            if (coverFinder.currentCover != null)
+            {
+                if (coverFinder.currentCover.CompareTag("Small Object"))
+                    movementScript.crouch = true;
+            }
         }
         // END OF ALARMS
 
-        // firstTreeDecisionS
-        int firstTreeDecision = Random.Range(1, 11);
+        // Decisions tree 1
+        if (alarmActionTaken == false)
+            firstTreeDecision = Random.Range(1, 11);
 
         switch(emotion.currentState)
         {
@@ -245,7 +324,11 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
                 break;
         }
 
-        int secondTreeDecision = Random.Range(1, 4); // 33%
+        if (alarmActionTaken == false)
+        {
+            secondTreeDecision = Random.Range(1, 4); // 33%
+            alarmActionTaken = true;
+        }
 
         if (move)
         {
@@ -253,10 +336,9 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
             if (agentScript.playerVisible)
                 attack = true;
 
-            if (secondTreeDecision == 1)
+            if (secondTreeDecision == 1 && coverFinder.currentCover != null && coverFinder.nextCover != null)
                 returnToCover = true;
-
-            if (secondTreeDecision > 1)
+            else
                 moveToCover = true;
         }
 
@@ -287,25 +369,73 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
             }
         }
 
+        if (move)
+            defend = false;
+
+        if (attack)
+            hide = false;
+
         if(defend)
         {
-            if (coverFinder.currentCover.CompareTag("Small Object") && coverFinder.nearCover && secondTreeDecision == 1)
-                attackFromCover = true;
+            if (coverFinder.currentCover != null)
+            {
+                if (coverFinder.currentCover.CompareTag("Small Object") && coverFinder.nearCover && secondTreeDecision == 1)
+                { 
+                    attackFromCover = true;
+                    movementScript.crouch = false;
+                    hide = false;
+                }
+
+            }
 
             if (secondTreeDecision > 1)
                 hide = true;
         }
 
+        if (movementScript.inAir)
+            hide = false;
+            
         // END OF DECISIONS
 
-
         // Assigning decisions to scripts
+        // AgentScript
+        if (attackPlayer)
+            agentScript.attackPlayer = true;
 
-        @@@
+        if (attackPlayerCover)
+            agentScript.attackCover = true;
+
+        if(attackFromCover)
+        {
+            movementScript.crouch = false;
+
+            if (agentScript.playerVisible)
+                agentScript.attackPlayer = true;
+            else
+                agentScript.attackCover = true;
+        }
+
+        // MovementScript and CoverFinderScript
+        if (hide == false)
+            movementScript.crouch = false;
+        else
+        {
+            if (coverFinder.nearCover == false)
+                moveToCover = true;
+            else
+            { 
+                movementScript.crouch = true;
+                agentScript.shoot = false;
+                attackPlayer = false;
+                attackPlayerCover = false;
+                agentScript.attackCover = false;
+                agentScript.attackPlayer = false;
+            }
+        }
 
         if (moveToCover)
         {
-            if (addCover)
+            if (coverFinder.nextCover == null && coverFinder.movingToCover == false)
             {
                 addCover = false;
                 MoveToCover();
@@ -317,10 +447,6 @@ public class firstTreeDecisionMakingScript : MonoBehaviour
             returnToCover = false;
             ReturnToCover();
         }
-
-        if (hide == false)
-            movementScript.crouch = false;
-    
-        
+        // END OF ASSIGNING
     }
 }

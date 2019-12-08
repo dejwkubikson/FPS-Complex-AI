@@ -18,7 +18,7 @@ public class EmotionScript : MonoBehaviour
 
     private int emotionCoolDown = 1;
 
-    firstTreeDecisionMakingScript firstTreeDecisionMaking;
+    DecisionMakingScript decisionMaking;
     MovementScript movementScript;
     AgentScript agentScript;
 
@@ -37,7 +37,7 @@ public class EmotionScript : MonoBehaviour
     public void Confident()
     {
         currentState = States.confidentState;
-        firstTreeDecisionMaking.firstTreeDecisionSpeed = 5;
+        decisionMaking.decisionSpeed = 5;
         movementScript.movementSpeed = 15;
         agentScript.accuracy = 65;
         agentScript.shootCoolDown = 0.8f;
@@ -47,7 +47,7 @@ public class EmotionScript : MonoBehaviour
     public void Fearful()
     {
         currentState = States.fearfulState;
-        firstTreeDecisionMaking.firstTreeDecisionSpeed = 15;
+        decisionMaking.decisionSpeed = 15;
         movementScript.movementSpeed = 5;
         agentScript.accuracy = 5;
         agentScript.shootCoolDown = 0.2f; // full auto due to fear
@@ -57,7 +57,7 @@ public class EmotionScript : MonoBehaviour
     public void Rage()
     {
         currentState = States.rageState;
-        firstTreeDecisionMaking.firstTreeDecisionSpeed = 3;
+        decisionMaking.decisionSpeed = 3;
         movementScript.movementSpeed = 20;
         agentScript.accuracy = 3;
         agentScript.shootCoolDown = 0.2f; // full auto due to fear
@@ -67,7 +67,7 @@ public class EmotionScript : MonoBehaviour
     public void Determinated()
     {
         currentState = States.determinedState;
-        firstTreeDecisionMaking.firstTreeDecisionSpeed = 4;
+        decisionMaking.decisionSpeed = 4;
         movementScript.movementSpeed = 15;
         agentScript.accuracy = 50;
         agentScript.shootCoolDown = 0.4f;
@@ -76,7 +76,7 @@ public class EmotionScript : MonoBehaviour
     public void Normal()
     {
         currentState = States.normalState;
-        firstTreeDecisionMaking.firstTreeDecisionSpeed = 7;
+        decisionMaking.decisionSpeed = 7;
         movementScript.movementSpeed = 10;
         agentScript.accuracy = 30;
         agentScript.shootCoolDown = 1;
@@ -102,7 +102,7 @@ public class EmotionScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        firstTreeDecisionMaking = gameObject.GetComponent<firstTreeDecisionMakingScript>();
+        decisionMaking = gameObject.GetComponent<DecisionMakingScript>();
         movementScript = gameObject.GetComponent<MovementScript>();
         agentScript = gameObject.GetComponent<AgentScript>();
     }

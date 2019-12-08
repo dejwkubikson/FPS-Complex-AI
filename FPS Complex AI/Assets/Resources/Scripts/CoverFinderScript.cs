@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CoverFinderScript : MonoBehaviour
 {
-    firstTreeDecisionMakingScript firstTreeDecisionScript;
+    DecisionMakingScript decisionMaking;
     
     public List<GameObject> bigObjList;
     public List<GameObject> smallObjList;
@@ -25,41 +25,104 @@ public class CoverFinderScript : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        // If collided with the cover that the agent was supposed to hide behind.
-        if(collision.gameObject == nextCover)
+        if (collision.gameObject.CompareTag("Enemy"))
+            return;
+
+        if (collision.gameObject.name == "Map border")
         {
             movementScript.RemoveFirstPoint();
-            currentCover = nextCover;
-            nextCover = null;
-            visitedCovers.Add(currentCover);
-            movingToCover = false;
-            firstTreeDecisionScript.moveToCover = false;
-            return;
+
+        }
+
+        Debug.Log("collided with " + collision.gameObject.name);
+
+        // If collided with the cover that the agent was supposed to hide behind.
+        if (nextCover != null)
+        {
+            if (collision.gameObject == nextCover || Vector3.Distance(nextCover.transform.position, transform.position) < 8)
+            {
+                movementScript.RemoveFirstPoint();
+                currentCover = nextCover;
+                nextCover = null;
+                if (visitedCovers.Contains(currentCover) == false)
+                    visitedCovers.Add(currentCover);
+                movingToCover = false;
+                decisionMaking.moveToCover = false;
+                return;
+            }
         }
     }
 
     private void OnCollisionStay(Collision collision)
     {
-        if(collision.collider.name != "Floor")
-        {
-            //Debug.Log(this.name + " staying in collision with " + collision.collider.name);
+        if (collision.gameObject.CompareTag("Enemy"))
+            return;
 
+        if (collision.collider.name != "Floor")
+        {
+            Debug.Log(this.name + " staying in collision with " + collision.collider.name);
+
+            if (nextCover != null)
+            {
+                Debug.Log("1");
+                if (collision.gameObject == nextCover)
+                {
+                    Debug.Log("2");
+                    movementScript.RemoveFirstPoint();
+                    currentCover = nextCover;
+                    nextCover = null;
+                    if (visitedCovers.Contains(currentCover) == false)
+                        visitedCovers.Add(currentCover);
+                    movingToCover = false;
+                    decisionMaking.moveToCover = false;
+                }
+            }
+
+            if (movementScript.inAir == false)
+                AvoidObject(collision.gameObject);
+            
+            return;/*
             if (collision.gameObject == lastCollidedWith && movementScript.inAir == false)
             {
+                Debug.Log("1");
                 inCollisionTime += Time.deltaTime;
 
                 if (movingToCover)
                 {
+                    Debug.Log("2");
                     if (inCollisionTime > 0.3f)
                     {
+                        Debug.Log("3");
                         inCollisionTime = 0.0f;
-                        AvoidObject(collision.gameObject);
+                        if (nextCover != null)
+                        {
+                            Debug.Log("4");
+                            if (collision.gameObject == nextCover)
+                            {
+                                Debug.Log("5");
+                                movementScript.RemoveFirstPoint();
+                                currentCover = nextCover;
+                                nextCover = null;
+                                if (visitedCovers.Contains(currentCover) == false)
+                                    visitedCovers.Add(currentCover);
+                                movingToCover = false;
+                                decisionMaking.moveToCover = false;
+                                movementScript.MoveBack(3);
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log("6");
+                            AvoidObject(collision.gameObject);
+                        }
                     }
                 }
                 else
                 {
-                    if(inCollisionTime > 0.3f)
+                    Debug.Log("7");
+                    if (inCollisionTime > 0.3f)
                     {
+                        Debug.Log("8");
                         inCollisionTime = 0.0f;
                         movementScript.MoveBack(3);
                     }
@@ -67,9 +130,10 @@ public class CoverFinderScript : MonoBehaviour
             }
             else
             {
+                movementScript.MoveBack(1);
                 inCollisionTime = 0.0f;
                 lastCollidedWith = collision.gameObject;
-            }
+            }*/
         }
     }
 
@@ -88,14 +152,14 @@ public class CoverFinderScript : MonoBehaviour
         bool objOnRight = false;
 
         int pathPick = 1;
-        if (objectToAvoid.CompareTag("Small Object") && movementScript.crouch == false)
-            pathPick = Random.Range(1, 3);
+        //if (objectToAvoid.CompareTag("Small Object") && movementScript.crouch == false)
+        //    pathPick = Random.Range(1, 3);
         
         switch(pathPick)
         {
             case 1:
                 // Avoid by going left or right. Checking if there's an object near.
-                //Debug.Log("Avoid by going left or right.");
+                Debug.Log("Avoid by going left or right.");
                 for(int i = 0; i < coversCombined.Count; i++)
                 {
                     if(Vector3.Distance(objectToAvoid.transform.position, coversCombined[i].transform.position) <= 10 && objectToAvoid != coversCombined[i])
@@ -107,7 +171,10 @@ public class CoverFinderScript : MonoBehaviour
                 }
 
                 if (objOnRight)
+                {
                     movementScript.MoveLeft(7);
+                    movementScript.MoveBack(-7);
+                }
                 else
                     movementScript.MoveRight(7);
 
@@ -115,7 +182,7 @@ public class CoverFinderScript : MonoBehaviour
 
             case 2:
                 // Avoid by jumping over.
-                //Debug.Log("Avoiding by jumping.");
+                Debug.Log("Avoiding by jumping.");
                 movementScript.JumpOnObject(objectToAvoid);
 
                 break;
@@ -136,7 +203,7 @@ public class CoverFinderScript : MonoBehaviour
             if (coversCombined[i] == currentCover)
                 continue;
 
-            if (firstTreeDecisionScript.IsCoverInUse(coversCombined[i]))
+            if (decisionMaking.IsCoverInUse(coversCombined[i]))
                 continue;
 
             bool breakLoop = false;
@@ -206,12 +273,31 @@ public class CoverFinderScript : MonoBehaviour
 
         player = GameObject.FindGameObjectWithTag("Player");
 
-        firstTreeDecisionScript = gameObject.GetComponent<firstTreeDecisionMakingScript>();
+        decisionMaking = gameObject.GetComponent<DecisionMakingScript>();
     }
 
     private void Update()
     {
-        if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 5 || Vector3.Distance(gameObject.transform.position, currentCover.transform.position) < 5)
-            nearCover = true;
+        if (nextCover != null)
+        {
+            if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 8)
+            {
+                nearCover = true;
+                currentCover = nextCover;
+                nextCover = null;
+                movingToCover = false;
+                decisionMaking.moveToCover = false;
+                if (visitedCovers.Contains(currentCover) == false)
+                    visitedCovers.Add(currentCover);
+            }
+        }
+        else
+        if (currentCover != null)
+        {
+            if (Vector3.Distance(gameObject.transform.position, currentCover.transform.position) < 8)
+                nearCover = true;
+        }
+        else
+            nearCover = false;
     }
 }

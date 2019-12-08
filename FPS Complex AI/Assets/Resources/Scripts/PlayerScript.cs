@@ -65,6 +65,11 @@ public class PlayerScript : MonoBehaviour
     IEnumerator AttackingCover (GameObject cover)
     {
         attackedCover = cover;
+        if(cover.CompareTag("Small Object") || cover.CompareTag("Big Object"))
+        {
+            cover.transform.GetChild(1).GetComponent<ParticleSystem>().Play();
+            cover.GetComponent<AudioSource>().Play();
+        }
         yield return new WaitForSeconds(attackCoolDown);
         attackedCover = null;
     }
@@ -81,7 +86,7 @@ public class PlayerScript : MonoBehaviour
         nearCover = false;
         for(int i = 0; i < coversCombined.Count; i++)
         {
-            if (Vector3.Distance(transform.position, coversCombined[i].transform.position) <= 10)
+            if (Vector3.Distance(transform.position, coversCombined[i].transform.position) <= 9)
             {
                 nearCover = true;
                 playerCover = coversCombined[i];
@@ -90,7 +95,7 @@ public class PlayerScript : MonoBehaviour
         }
 
         if (nearCover == false)
-            playerCover = null;       
+            playerCover = null;
     }
 
     public void ReceiveDamage(int amount)

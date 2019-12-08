@@ -38,7 +38,8 @@ public class AgentScript : MonoBehaviour
     public int ammo = 30;
     private bool reloading = false;
     public bool attackCover;
-    
+    public bool attackPlayer;
+
     private bool PlayerVisible()
     {
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(GameObject.Find("FirstPersonCharacter").GetComponent<Camera>());
@@ -94,11 +95,10 @@ public class AgentScript : MonoBehaviour
             health -= amount;
         }
     }
-
     private void Die()
     {
         // Disabling all scripts
-        gameObject.GetComponent<firstTreeDecisionMakingScript>().enabled = false;
+        gameObject.GetComponent<DecisionMakingScript>().enabled = false;
         gameObject.GetComponent<MovementScript>().enabled = false;
         gameObject.GetComponent<CoverFinderScript>().enabled = false;
         gameObject.GetComponent<Rigidbody>().isKinematic = true;
@@ -135,12 +135,15 @@ public class AgentScript : MonoBehaviour
                 }
             }
         }
-
-        /*int random = Random.Range(0, 101);
-        if(random <= accuracy)
+        else
+        if(attackPlayer && playerVisible)
         {
-            player.GetComponent<PlayerScript>().ReceiveDamage(damage);
-        }*/
+            int random = Random.Range(0, 101);
+            if (random <= accuracy)
+            {
+                player.GetComponent<PlayerScript>().ReceiveDamage(damage);
+            }
+        }
     }
 
     IEnumerator Reload()
@@ -189,13 +192,21 @@ public class AgentScript : MonoBehaviour
         if (PlayerVisible())
             playerVisible = true;
         else
+        {
             playerVisible = false;
+            attackPlayer = false;
+            if(playerCoverVisible == false)
+                shoot = false;
+        }
 
         if (health <= 0)
         {
             if (dead == false)
                 Die();
         }
+
+        if (attackPlayer || attackCover)
+            shoot = true;
 
         currentCoolDown += Time.deltaTime;
         if (shoot && shootCoolDown < currentCoolDown)

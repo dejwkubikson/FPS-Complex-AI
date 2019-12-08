@@ -12,7 +12,7 @@ public class MovementScript : MonoBehaviour
     public Vector3 currentPos;
     public Quaternion currentRot;
 
-    public bool move;
+    public bool move = true;
     public bool hold;
     public bool jump;
     public bool inAir = false;
@@ -22,9 +22,10 @@ public class MovementScript : MonoBehaviour
     public void JumpOnObject(GameObject objectToJumpOn)
     {
         agentScript.ChangeActionText("Jumping on object");
-        Vector3 desiredPos = new Vector3(currentPos.x, currentPos.y + objectToJumpOn.GetComponent<BoxCollider>().bounds.size.y, currentPos.z);
+        Vector3 desiredPos = new Vector3(currentPos.x, currentPos.y + objectToJumpOn.GetComponent<BoxCollider>().bounds.size.y + 2, currentPos.z);
 
         transform.position = Vector3.Lerp(currentPos, desiredPos, 1);
+        movePathList.Insert(0, transform.position + new Vector3(3, 0, 0));
     }
 
     public void MoveToPoint()
@@ -39,7 +40,7 @@ public class MovementScript : MonoBehaviour
 
         //Debug.Log(Vector3.Distance(currentPos, moveToPoint) + " TO " + moveToPoint);
 
-        if (Vector3.Distance(currentPos, moveToPoint) <= 4)
+        if (Vector3.Distance(currentPos, moveToPoint) <= 3)
             RemoveFirstPoint();
         else
             transform.position = Vector3.MoveTowards(currentPos, moveToPoint, Time.deltaTime * movementSpeed);
@@ -57,6 +58,7 @@ public class MovementScript : MonoBehaviour
 
     public void MoveBack(int amount)
     {
+        Debug.Log("Moving back");
         movePathList.Insert(0, new Vector3(currentPos.x - amount, currentPos.y, currentPos.z));
     }
 
@@ -70,7 +72,16 @@ public class MovementScript : MonoBehaviour
 
     public void AddPointToList(Vector3 position)
     {
-        movePathList.Add(position);
+        bool found = false;
+        // Adding only if the point doesn't already exist in the list
+        for(int i = 0; i < movePathList.Count; i++)
+        {
+            if (movePathList[i] == position)
+                found = true;
+        }
+
+        if (found == false)
+            movePathList.Add(position);
     }
 
     // Start is called before the first frame update
@@ -79,6 +90,8 @@ public class MovementScript : MonoBehaviour
         movePathList = new List<Vector3>();
 
         agentScript = gameObject.GetComponent<AgentScript>();
+
+        move = true;
     }
 
     // Update is called once per frame
