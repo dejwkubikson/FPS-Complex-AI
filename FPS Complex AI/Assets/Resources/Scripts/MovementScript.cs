@@ -13,11 +13,11 @@ public class MovementScript : MonoBehaviour
     public Quaternion currentRot;
 
     public bool move = true;
-    public bool hold;
     public bool jump;
     public bool inAir = false;
     public bool crouch;
-    public bool stand;
+
+    private float inAirTime;
 
     public void JumpOnObject(GameObject objectToJumpOn)
     {
@@ -30,9 +30,9 @@ public class MovementScript : MonoBehaviour
 
     public void MoveToPoint()
     {
-        if (movePathList.Count <= 0)
+        if (movePathList.Count == 0)
         {
-            Debug.LogWarning("Trying to move to first point but it doesn't exist!");
+            //Debug.LogWarning("Trying to move to first point but it doesn't exist!");
             return;
         }
 
@@ -40,7 +40,10 @@ public class MovementScript : MonoBehaviour
 
         //Debug.Log(Vector3.Distance(currentPos, moveToPoint) + " TO " + moveToPoint);
 
-        if (Vector3.Distance(currentPos, moveToPoint) <= 3)
+        if (Vector3.Distance(currentPos, moveToPoint) <= 0)
+            RemoveFirstPoint();
+        else
+            if (Vector3.Distance(currentPos, moveToPoint) <= 6 && currentPos.y + 3 < moveToPoint.y)
             RemoveFirstPoint();
         else
             transform.position = Vector3.MoveTowards(currentPos, moveToPoint, Time.deltaTime * movementSpeed);
@@ -58,16 +61,20 @@ public class MovementScript : MonoBehaviour
 
     public void MoveBack(int amount)
     {
-        Debug.Log("Moving back");
         movePathList.Insert(0, new Vector3(currentPos.x - amount, currentPos.y, currentPos.z));
+    }
+
+    public void MoveForward(int amount)
+    {
+        movePathList.Insert(0, new Vector3(currentPos.x + amount, currentPos.y, currentPos.z));
     }
 
     public void RemoveFirstPoint()
     {
         if (movePathList.Count > 0)
             movePathList.RemoveAt(0);
-        else
-            Debug.LogWarning("RemoveFirstPoint() tried to remove point from path but none exist.");
+        //else
+         //   Debug.LogWarning("RemoveFirstPoint() tried to remove point from path but none exist.");
     }
 
     public void AddPointToList(Vector3 position)
@@ -100,11 +107,13 @@ public class MovementScript : MonoBehaviour
         if (agentScript.dead)
             return;
 
+        if (movePathList.Count > 3)
+            movePathList.Clear();
+
         currentPos = gameObject.transform.position;
         currentRot = gameObject.transform.rotation;
 
         gameObject.transform.eulerAngles = new Vector3(-90, 90, 0);
-
 
         if (move)
             MoveToPoint();
@@ -113,6 +122,15 @@ public class MovementScript : MonoBehaviour
             inAir = true;
         else
             inAir = false;
+
+        if(inAir)
+            inAirTime += Time.deltaTime;
+
+        if (inAirTime > 3)
+        {
+            AddPointToList(currentPos + new Vector3(4, 0, 0));
+            inAirTime = 0;
+        }
 
         if (crouch)
             gameObject.transform.localScale = new Vector3(9, 9, 6);

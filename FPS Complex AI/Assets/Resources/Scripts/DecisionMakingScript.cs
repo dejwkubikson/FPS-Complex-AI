@@ -13,7 +13,7 @@ public class DecisionMakingScript : MonoBehaviour
 
     public List<GameObject> allyAgents;
 
-    int noOfAllies = 0;
+    int noOfAgents = 0;
     public int decisionSpeed = 7;
 
     // ALARMS
@@ -23,8 +23,6 @@ public class DecisionMakingScript : MonoBehaviour
     private bool alarm;
     private float alarmCoolDown = 5.0f;
     
-    public bool flankPlayer;
-
     public bool moveToCover;
     public bool returnToCover;
     public bool hide;
@@ -32,9 +30,8 @@ public class DecisionMakingScript : MonoBehaviour
 
     public bool attackPlayerCover;
     public bool attackPlayer;
+    public bool flankPlayer;
     public bool playerVisible;
-    public bool playerMovingTowards;
-    public bool moveToPlayer;
 
     public bool attack;
     public bool defend;
@@ -54,7 +51,12 @@ public class DecisionMakingScript : MonoBehaviour
     {
         agentScript.ChangeActionText("Moving to cover");
         //coverFinder.movingToCover = true;
-        movementScript.AddPointToList(coverFinder.GetClosestCoverToHide().transform.position - coverOffset);
+        // If there are no more covers seperating the agent from the player
+        if (coverFinder.GetClosestCoverToHide() != null)
+            movementScript.AddPointToList(coverFinder.GetClosestCoverToHide().transform.position - coverOffset);
+        else
+            if(agentScript.playerVisible == false)
+                movementScript.AddPointToList(gameObject.transform.position + new Vector3(5, 0, 0));
     }
     
     public void ReturnToCover()
@@ -65,6 +67,7 @@ public class DecisionMakingScript : MonoBehaviour
         {
             moveToCover = false;
             //coverFinder.movingToCover = true;
+            Debug.Log("ReturnToCover calling RemoveFirstPoint()");
             movementScript.RemoveFirstPoint();
             coverFinder.nextCover = coverFinder.currentCover;
             movementScript.AddPointToList(coverFinder.currentCover.transform.position - coverOffset);
@@ -88,9 +91,26 @@ public class DecisionMakingScript : MonoBehaviour
         for (int i = 0; i < allyAgents.Count; i++)
         {
             CoverFinderScript coverFinder = allyAgents[i].GetComponent<CoverFinderScript>();
-            if (coverFinder.currentCover == cover)
+            if (coverFinder.currentCover == cover || coverFinder.nextCover == cover)
                 return true;
         }
+
+        return false;
+    }
+
+    public bool CanIFlank()
+    {
+        // If no allies
+        if (noOfAgents == 1)
+            return false;
+
+        Vector3 playerPos = player.transform.position;
+
+        // Map size is from z = -50 to z = 50, area considered in front is -20 to 20 if player is at z = 0
+        int zOffset = 20;
+
+        if(gameObject.transform.position.z > player.transform.position.z + zOffset || gameObject.transform.position.z < player.transform.position.z - zOffset)
+            return true;
 
         return false;
     }
@@ -99,11 +119,10 @@ public class DecisionMakingScript : MonoBehaviour
     {
         for(int i = 0; i < allyAgents.Count; i++)
         {
-            CoverFinderScript script = allyAgents[i].GetComponent<CoverFinderScript>();
-            if (script.movingToCover)
+            DecisionMakingScript script = allyAgents[i].GetComponent<DecisionMakingScript>();
+            if (script.moveToCover)
                 return true;
         }
-
         return false;
     }
 
@@ -121,6 +140,7 @@ public class DecisionMakingScript : MonoBehaviour
         addCover = false;
         attackPlayer = false;
         attackPlayerCover = false;
+        flankPlayer = false;
 
         attack = false;
         move = false;
@@ -130,6 +150,8 @@ public class DecisionMakingScript : MonoBehaviour
         agentScript.attackPlayer = false;
         agentScript.attackCover = false;
         agentScript.shoot = false;
+
+        agentScript.ChangeActionText("");
     }
 
     // Start is called before the first frame update
@@ -140,6 +162,8 @@ public class DecisionMakingScript : MonoBehaviour
         GameObject[] agents = GameObject.FindGameObjectsWithTag("Enemy");
         for (int i = 0; i < agents.Length; i++)
             allyAgents.Add(agents[i]);
+
+        noOfAgents = allyAgents.Count;
 
         coverFinder = gameObject.GetComponent<CoverFinderScript>();
         movementScript = gameObject.GetComponent<MovementScript>();
@@ -164,19 +188,18 @@ public class DecisionMakingScript : MonoBehaviour
         {
             underAttack = true;
             alarm = true;
-            Debug.Log("underAttack");
+            emotion.AddAdrenaline(1);
         }
         if (playerScript.attackedCover == coverFinder.currentCover && coverFinder.nearCover)
         {
             coverUnderAttack = true;
             alarm = true;
-            Debug.Log("coverUnderAttack");
+            emotion.AddAdrenaline(1);
         }
         if (agentScript.ammo <= 0)
         {
             outOfAmmo = true;
             alarm = true;
-            Debug.Log("outOfAmmo");
         }
 
         if (alarm && alarmCoolDown >= 0)
@@ -192,7 +215,6 @@ public class DecisionMakingScript : MonoBehaviour
         {
             attack = true;
             alarm = true;
-            Debug.Log("playerVisible");
         }
 
         if(agentScript.attackCover && playerScript.playerCover == null)
@@ -207,13 +229,6 @@ public class DecisionMakingScript : MonoBehaviour
         else
         if (decisionSpeed <= decisionTimer)
             ClearActions();
-
-        /*
-        if (alarm == false)
-            if (decisionSpeed > decisionTimer)
-                return;
-
-        ClearActions();*/
 
         // ALARMS
         if(underAttack)
@@ -238,6 +253,7 @@ public class DecisionMakingScript : MonoBehaviour
 
         if (coverUnderAttack)
         {
+            agentScript.ChangeActionText("Cover under attack - Hiding");
             hide = true;
             attack = false;
             movementScript.crouch = true;
@@ -245,6 +261,7 @@ public class DecisionMakingScript : MonoBehaviour
 
         if(outOfAmmo)
         {
+            agentScript.ChangeActionText("Reloading");
             agentScript.reload = true;
             attackPlayer = false;
             agentScript.attackPlayer = false;
@@ -344,8 +361,10 @@ public class DecisionMakingScript : MonoBehaviour
 
         if (attack)
         {
-            if(CheckIfAllyMoving() || secondTreeDecision < 2)
+            if(CheckIfAllyMoving() && secondTreeDecision < 2)
             {
+                agentScript.ChangeActionText("Cover fire as ally moving");
+
                 if (agentScript.playerVisible)
                     attackPlayer = true;
                 else
@@ -359,7 +378,7 @@ public class DecisionMakingScript : MonoBehaviour
             else
             if(secondTreeDecision >= 2)
             {
-                if(agentScript.playerVisible && agentScript.playerCoverVisible)
+                if(agentScript.playerVisible || agentScript.playerCoverVisible)
                 {
                     if (secondTreeDecision == 2 || (playerScript.nearCover && playerScript.crouching == false))
                         attackPlayer = true;
@@ -433,9 +452,25 @@ public class DecisionMakingScript : MonoBehaviour
             }
         }
 
+        // Don't stop moving to cover until it is reached
+        if (coverFinder.nextCover != null)
+            moveToCover = true;
+
         if (moveToCover)
         {
-            if (coverFinder.nextCover == null && coverFinder.movingToCover == false)
+            if(CanIFlank())
+            {
+                int flankRand = Random.Range(1, 4); // 33%
+
+                if (flankRand == 1)
+                    flankPlayer = true;
+                else
+                    flankPlayer = false;
+            }
+            else
+                flankPlayer = false;
+
+            if (coverFinder.nextCover == null)
             {
                 addCover = false;
                 MoveToCover();

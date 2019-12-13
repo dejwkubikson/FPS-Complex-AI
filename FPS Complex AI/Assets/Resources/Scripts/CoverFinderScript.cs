@@ -5,6 +5,7 @@ using UnityEngine;
 public class CoverFinderScript : MonoBehaviour
 {
     DecisionMakingScript decisionMaking;
+    AgentScript agentScript;
     
     public List<GameObject> bigObjList;
     public List<GameObject> smallObjList;
@@ -18,36 +19,36 @@ public class CoverFinderScript : MonoBehaviour
     public float inCollisionTime = 0.0f;
 
     public bool collidedNxtCover;
-    public bool movingToCover = false;
     public bool nearCover = false;
 
     MovementScript movementScript;
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
+        if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.name == "Floor")
             return;
 
         if (collision.gameObject.name == "Map border")
         {
+            Debug.Log(gameObject.name + " map border collision calling RemoveFirstPoint()");
             movementScript.RemoveFirstPoint();
-
         }
 
-        Debug.Log("collided with " + collision.gameObject.name);
+        // Debug.Log("Collided with " + collision.gameObject.name);
 
         // If collided with the cover that the agent was supposed to hide behind.
         if (nextCover != null)
         {
-            if (collision.gameObject == nextCover || Vector3.Distance(nextCover.transform.position, transform.position) < 8)
+            if (collision.gameObject == nextCover || Vector3.Distance(nextCover.transform.position, transform.position) < 5)
             {
+                Debug.Log(gameObject.name + " collision calling RemoveFirstPoint()");
                 movementScript.RemoveFirstPoint();
                 currentCover = nextCover;
                 nextCover = null;
                 if (visitedCovers.Contains(currentCover) == false)
                     visitedCovers.Add(currentCover);
-                movingToCover = false;
                 decisionMaking.moveToCover = false;
+                agentScript.ChangeActionText("Reached cover");
                 return;
             }
         }
@@ -55,134 +56,200 @@ public class CoverFinderScript : MonoBehaviour
 
     private void OnCollisionStay(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
+        if (collision.gameObject.CompareTag("Enemy") || collision.collider.name == "Floor")
             return;
 
-        if (collision.collider.name != "Floor")
+        //Debug.Log(this.name + " staying in collision with " + collision.collider.name);
+
+        inCollisionTime += Time.deltaTime;
+
+        if (nextCover != null)
         {
-            Debug.Log(this.name + " staying in collision with " + collision.collider.name);
-
-            if (nextCover != null)
+            if (collision.gameObject == nextCover)
             {
-                Debug.Log("1");
-                if (collision.gameObject == nextCover)
-                {
-                    Debug.Log("2");
-                    movementScript.RemoveFirstPoint();
-                    currentCover = nextCover;
-                    nextCover = null;
-                    if (visitedCovers.Contains(currentCover) == false)
-                        visitedCovers.Add(currentCover);
-                    movingToCover = false;
-                    decisionMaking.moveToCover = false;
-                }
+                Debug.Log(gameObject.name + " collision stay calling RemoveFirstPoint()");
+                movementScript.RemoveFirstPoint();
+                currentCover = nextCover;
+                nextCover = null;
+                if (visitedCovers.Contains(currentCover) == false)
+                    visitedCovers.Add(currentCover);
+                decisionMaking.moveToCover = false;
             }
+        }
 
-            if (movementScript.inAir == false)
-                AvoidObject(collision.gameObject);
-            
-            return;/*
-            if (collision.gameObject == lastCollidedWith && movementScript.inAir == false)
+        if (movementScript.inAir == false && inCollisionTime >= 3)
+        {
+            inCollisionTime = 0;
+            AvoidObject(collision.gameObject);
+        } 
+        /*
+        if (collision.gameObject == lastCollidedWith && movementScript.inAir == false)
+        {
+            Debug.Log("1");
+            inCollisionTime += Time.deltaTime;
+
+            if (movingToCover)
             {
-                Debug.Log("1");
-                inCollisionTime += Time.deltaTime;
-
-                if (movingToCover)
+                Debug.Log("2");
+                if (inCollisionTime > 0.3f)
                 {
-                    Debug.Log("2");
-                    if (inCollisionTime > 0.3f)
+                    Debug.Log("3");
+                    inCollisionTime = 0.0f;
+                    if (nextCover != null)
                     {
-                        Debug.Log("3");
-                        inCollisionTime = 0.0f;
-                        if (nextCover != null)
+                        Debug.Log("4");
+                        if (collision.gameObject == nextCover)
                         {
-                            Debug.Log("4");
-                            if (collision.gameObject == nextCover)
-                            {
-                                Debug.Log("5");
-                                movementScript.RemoveFirstPoint();
-                                currentCover = nextCover;
-                                nextCover = null;
-                                if (visitedCovers.Contains(currentCover) == false)
-                                    visitedCovers.Add(currentCover);
-                                movingToCover = false;
-                                decisionMaking.moveToCover = false;
-                                movementScript.MoveBack(3);
-                            }
-                        }
-                        else
-                        {
-                            Debug.Log("6");
-                            AvoidObject(collision.gameObject);
+                            Debug.Log("5");
+                            movementScript.RemoveFirstPoint();
+                            currentCover = nextCover;
+                            nextCover = null;
+                            if (visitedCovers.Contains(currentCover) == false)
+                                visitedCovers.Add(currentCover);
+                            movingToCover = false;
+                            decisionMaking.moveToCover = false;
+                            movementScript.MoveBack(3);
                         }
                     }
-                }
-                else
-                {
-                    Debug.Log("7");
-                    if (inCollisionTime > 0.3f)
+                    else
                     {
-                        Debug.Log("8");
-                        inCollisionTime = 0.0f;
-                        movementScript.MoveBack(3);
+                        Debug.Log("6");
+                        AvoidObject(collision.gameObject);
                     }
                 }
             }
             else
             {
-                movementScript.MoveBack(1);
-                inCollisionTime = 0.0f;
-                lastCollidedWith = collision.gameObject;
-            }*/
+                Debug.Log("7");
+                if (inCollisionTime > 0.3f)
+                {
+                    Debug.Log("8");
+                    inCollisionTime = 0.0f;
+                    movementScript.MoveBack(3);
+                }
+            }
         }
+        else
+        {
+            movementScript.MoveBack(1);
+            inCollisionTime = 0.0f;
+            lastCollidedWith = collision.gameObject;
+        }*/
+        
     }
 
     private void OnCollisionExit(Collision collision)
     {
         //Debug.Log(this.name + " no more colliding with " + collision.collider.name);
-        inCollisionTime = 0.0f;
+        if(collision.gameObject.name != "Floor")
+            inCollisionTime = 0.0f;
     }
 
     // When colliding with an object constantly the agent will try to avoid it by gettin aroud it or if possible, jumping over.
     public void AvoidObject(GameObject objectToAvoid)
     {
-        // @@@ actionText.text = "Avoiding object";
-        //Debug.Log("Avoiding " + objectToAvoid);
+        agentScript.ChangeActionText("Avoiding object");
+        Debug.Log("I, " + gameObject.name +" avoiding " + objectToAvoid);
 
         bool objOnRight = false;
+        bool objOnLeft = false;
 
         int pathPick = 1;
-        //if (objectToAvoid.CompareTag("Small Object") && movementScript.crouch == false)
-        //    pathPick = Random.Range(1, 3);
+        if (objectToAvoid.CompareTag("Small Object") && movementScript.crouch == false)
+            pathPick = Random.Range(1, 3);
         
         switch(pathPick)
         {
             case 1:
                 // Avoid by going left or right. Checking if there's an object near.
-                Debug.Log("Avoid by going left or right.");
+                // Debug.Log("Avoid by going left or right.");
                 for(int i = 0; i < coversCombined.Count; i++)
                 {
-                    if(Vector3.Distance(objectToAvoid.transform.position, coversCombined[i].transform.position) <= 10 && objectToAvoid != coversCombined[i])
+                    if (Vector3.Distance(objectToAvoid.transform.position, coversCombined[i].transform.position) <= 10 && objectToAvoid != coversCombined[i])
                     {
                         //Debug.Log("Object next to " + objectToAvoid.name  + " is " + coversCombined[i].name);
                         if (objectToAvoid.transform.position.z > coversCombined[i].transform.position.z)
                             objOnRight = true;
                     }
+
+                    if (Vector3.Distance(objectToAvoid.transform.position, coversCombined[i].transform.position) <= 10 && objectToAvoid != coversCombined[i])
+                    {
+                        //Debug.Log("Object next to " + objectToAvoid.name  + " is " + coversCombined[i].name);
+                        if (objectToAvoid.transform.position.z < coversCombined[i].transform.position.z)
+                            objOnLeft = true;
+                    }
                 }
 
-                if (objOnRight)
+                if(objOnLeft == false && objOnRight == false)
                 {
-                    movementScript.MoveLeft(7);
-                    movementScript.MoveBack(-7);
+                    int decision = Random.Range(1, 3);
+                    if (decision == 1)
+                    {
+                        // If object is behind the agent and the agent is trying to get past it to return to cover
+                        if (objectToAvoid.transform.position.x < gameObject.transform.position.x && decisionMaking.returnToCover)
+                        {
+                            // Reverse order as the Move() functions inserts point at the begining of the movement list.
+                            movementScript.MoveForward(-12);
+                            movementScript.MoveLeft(10);
+                        }
+                        else
+                        {
+                            movementScript.MoveForward(12);
+                            movementScript.MoveLeft(12);
+                            movementScript.MoveForward(-3);
+                        }
+                    }
+                    else
+                    {
+                        if (objectToAvoid.transform.position.x < gameObject.transform.position.x && decisionMaking.returnToCover)
+                        {
+                            // Reverse order as the Move() functions inserts point at the begining of the movement list.
+                            movementScript.MoveForward(-12);
+                            movementScript.MoveRight(12);
+                        }
+                        else 
+                        { 
+                            movementScript.MoveForward(12);
+                            movementScript.MoveRight(12);
+                            movementScript.MoveForward(-3);
+                        }
+                    }
                 }
                 else
-                    movementScript.MoveRight(7);
+                if (objOnRight)
+                {
+                    if (objectToAvoid.transform.position.x < gameObject.transform.position.x && decisionMaking.returnToCover)
+                    {
+                        movementScript.MoveRight(12);
+                        movementScript.MoveForward(-12);
+                    }
+                    else
+                    {
+                        movementScript.MoveForward(12);
+                        movementScript.MoveLeft(12);
+                        movementScript.MoveForward(-3);
+                    }
+                }
+                else if(objOnLeft)
+                {
+                    if (objectToAvoid.transform.position.x < gameObject.transform.position.x && decisionMaking.returnToCover)
+                    {
+                        movementScript.MoveRight(12);
+                        movementScript.MoveForward(-12);
+                    }
+                    else
+                    {
+                        movementScript.MoveForward(-12);
+                        movementScript.MoveLeft(12);
+                        movementScript.MoveForward(-3);
+                    }
+                }
 
                 break;
 
             case 2:
                 // Avoid by jumping over.
-                Debug.Log("Avoiding by jumping.");
+                // Debug.Log("Avoiding by jumping.");
                 movementScript.JumpOnObject(objectToAvoid);
 
                 break;
@@ -230,7 +297,20 @@ public class CoverFinderScript : MonoBehaviour
                 // Getting current agent's distance to player
                 float agentDistToPlayer = Vector3.Distance(gameObject.transform.position, player.transform.position);
 
-                if(agentDistToPlayer > coverDistToPlayer)
+                // If the agent is supposed to flank the player
+                if(decisionMaking.flankPlayer)
+                {
+                    if(coversCombined[i].transform.position.z > player.transform.position.z + 20 || coversCombined[i].transform.position.z < player.transform.position.z - 20)
+                    {
+                        // If the cover will be closer to player on X axis
+                        if(coversCombined[i].transform.position.x > gameObject.transform.position.x)
+                        {
+                            distance = distToObj;
+                            closestCover = coversCombined[i];
+                        }
+                    }
+                }
+                else if(agentDistToPlayer > coverDistToPlayer)
                 {
                     distance = distToObj;
                     closestCover = coversCombined[i];
@@ -242,6 +322,9 @@ public class CoverFinderScript : MonoBehaviour
         //if (closestCover == null)
         //    closestCover = currentCover;
         nextCover = closestCover;
+
+        if (closestCover == null)
+            closestCover = currentCover;
 
         return closestCover;
     }
@@ -274,27 +357,33 @@ public class CoverFinderScript : MonoBehaviour
         player = GameObject.FindGameObjectWithTag("Player");
 
         decisionMaking = gameObject.GetComponent<DecisionMakingScript>();
+
+        agentScript = gameObject.GetComponent<AgentScript>();
     }
 
     private void Update()
     {
         if (nextCover != null)
         {
-            if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 8)
+            /*if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 3)
             {
                 nearCover = true;
                 currentCover = nextCover;
                 nextCover = null;
-                movingToCover = false;
                 decisionMaking.moveToCover = false;
                 if (visitedCovers.Contains(currentCover) == false)
                     visitedCovers.Add(currentCover);
-            }
+
+                agentScript.ChangeActionText("Reached cover");
+
+                Debug.Log("Update calling RemoveFirstPoint()");
+                movementScript.RemoveFirstPoint();
+            }*/
         }
-        else
+
         if (currentCover != null)
         {
-            if (Vector3.Distance(gameObject.transform.position, currentCover.transform.position) < 8)
+            if (Vector3.Distance(gameObject.transform.position, currentCover.transform.position) < 3)
                 nearCover = true;
         }
         else

@@ -20,13 +20,15 @@ public class AgentScript : MonoBehaviour
     public ParticleSystem bloodParticle;
     public ParticleSystem shootingParticle;
     public TextMeshPro actionText;
+    EmotionScript emotion;
 
     public Vector3 currentPos;
 
     public bool shoot;
     public bool reload;
     public float shootCoolDown = 1;
-    private float currentCoolDown;
+    private float currentCoolDown = 0;
+    private bool healthCoolDown = false;
 
     AudioClip shotSound;
     AudioClip reloadSound;
@@ -65,7 +67,7 @@ public class AgentScript : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log("Another object seperating me from player: " + hit.transform.gameObject.name);
+                        // Debug.Log("Another object seperating me from player: " + hit.transform.gameObject.name);
                         if (hit.transform.gameObject == playerScript.playerCover)
                             playerCoverVisible = true;
                         else
@@ -88,6 +90,8 @@ public class AgentScript : MonoBehaviour
 
     public void ReceiveDamage(int amount)
     {
+        emotion.AddFear(2);
+
         bloodParticle.Play();
         if (dead == false)
         {
@@ -141,6 +145,7 @@ public class AgentScript : MonoBehaviour
             int random = Random.Range(0, 101);
             if (random <= accuracy)
             {
+                emotion.AddFear(-1);
                 player.GetComponent<PlayerScript>().ReceiveDamage(damage);
             }
         }
@@ -156,6 +161,13 @@ public class AgentScript : MonoBehaviour
         ammo = clipAmount;
         reload = false;
         reloading = false;
+    }
+
+    IEnumerator GetHealth()
+    {
+        healthCoolDown = false;
+        yield return new WaitForSeconds(3);
+        healthCoolDown = true;
     }
 
     // Start is called before the first frame update
@@ -175,6 +187,8 @@ public class AgentScript : MonoBehaviour
         reloadSound = Resources.Load<AudioClip>("Sounds/reload_sound");
         hitSound = Resources.Load<AudioClip>("Sounds/hit_sound");
 
+        emotion = gameObject.GetComponent<EmotionScript>();
+
         shoot = false;
         currentCoolDown = 0.0f;
     }
@@ -187,7 +201,7 @@ public class AgentScript : MonoBehaviour
         else
             return;
 
-        Debug.DrawRay(gameObject.transform.position, gameObject.transform.right * 4, Color.red, 0.5f);
+        Debug.DrawRay(gameObject.transform.position, gameObject.transform.forward, Color.red, 0.5f);
 
         if (PlayerVisible())
             playerVisible = true;
@@ -216,6 +230,9 @@ public class AgentScript : MonoBehaviour
             else
                 reload = true;
         }
+
+        if(health < 100 && healthCoolDown)
+            StartCoroutine(GetHealth());
 
         if(reload)
         {

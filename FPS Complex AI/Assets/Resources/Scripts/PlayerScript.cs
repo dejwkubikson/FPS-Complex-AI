@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class PlayerScript : MonoBehaviour
 {
-    int health = 100;
+    //int health = 100;
     int damage = 10;
     public GameObject attackedCover;
     public GameObject attackedAgent;
@@ -102,7 +102,7 @@ public class PlayerScript : MonoBehaviour
     {
         bloodParticle.Play();
         audioSource.PlayOneShot(hitSound);
-        health -= amount;
+        //health -= amount;
     }
 
     // Start is called before the first frame update
@@ -155,8 +155,6 @@ public class PlayerScript : MonoBehaviour
                 {
                     if (hit.collider != null)
                     {
-                        Debug.Log(hit.collider.gameObject.name);
-
                         GameObject hitObject = hit.collider.gameObject;
                         if (hitObject.CompareTag("Enemy"))
                         {

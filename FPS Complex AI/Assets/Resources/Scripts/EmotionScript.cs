@@ -16,7 +16,10 @@ public class EmotionScript : MonoBehaviour
     private bool fearCool = false;
     private bool adrenalineCool = false;
 
-    private int emotionCoolDown = 1;
+    private bool addingFear = false;
+    private bool addingAdrenaline = false;
+
+    private int emotionCoolDown = 5;
 
     DecisionMakingScript decisionMaking;
     MovementScript movementScript;
@@ -80,6 +83,38 @@ public class EmotionScript : MonoBehaviour
         movementScript.movementSpeed = 10;
         agentScript.accuracy = 30;
         agentScript.shootCoolDown = 1;
+    }
+
+    public void AddFear(int amount)
+    {
+        if (addingFear == false)
+        {
+            fear += amount;
+            StartCoroutine(AddFearOnce());
+        }
+    }
+
+    public void AddAdrenaline(int amount)
+    {
+        if (addingAdrenaline == false)
+        {
+            adrenaline += amount;
+            StartCoroutine(AddAdrenalineOnce());
+        }
+    }
+
+    IEnumerator AddFearOnce()
+    {
+        addingFear = true;
+        yield return new WaitForSeconds(3);
+        addingFear = false;
+    }
+
+    IEnumerator AddAdrenalineOnce()
+    {
+        addingAdrenaline = true;
+        yield return new WaitForSeconds(3);
+        addingAdrenaline = false;
     }
 
     IEnumerator FearCoolDown()
