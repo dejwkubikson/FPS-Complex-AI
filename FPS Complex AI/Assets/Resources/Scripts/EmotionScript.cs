@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using System.Diagnostics;
 public class EmotionScript : MonoBehaviour
 {
     public int fear = 50;
@@ -67,7 +67,7 @@ public class EmotionScript : MonoBehaviour
     }
 
     // High confidence and adrenaline - 80%+
-    public void Determinated()
+    public void Determined()
     {
         currentState = States.determinedState;
         decisionMaking.decisionSpeed = 4;
@@ -145,6 +145,9 @@ public class EmotionScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+
         if (fearCool == false && fear > 0)
             StartCoroutine(FearCoolDown());
 
@@ -179,7 +182,7 @@ public class EmotionScript : MonoBehaviour
         if(confident)
         {
             if (confident && onAdrenaline)
-                Determinated();
+                Determined();
             else
                 Confident();
 
@@ -191,5 +194,9 @@ public class EmotionScript : MonoBehaviour
 
         if (emotional == false)
             Normal();
+
+        watch.Stop();
+
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": EmotionScript Update() took " + watch.Elapsed + "ms to loop");
     }
 }

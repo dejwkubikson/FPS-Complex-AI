@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Diagnostics;
 
 public class DecisionMakingScript : MonoBehaviour
 {
@@ -43,6 +44,7 @@ public class DecisionMakingScript : MonoBehaviour
     private Vector3 coverOffset = new Vector3(3.5f, -4, 0);
     public float decisionTimer = 7.0f;
 
+    // Introduced this boolean as the agent could be changing his mind all the time when alarm on.
     public bool alarmActionTaken = false;
     public int firstTreeDecision;
     public int secondTreeDecision;
@@ -67,7 +69,7 @@ public class DecisionMakingScript : MonoBehaviour
         {
             moveToCover = false;
             //coverFinder.movingToCover = true;
-            Debug.Log("ReturnToCover calling RemoveFirstPoint()");
+            UnityEngine.Debug.Log("ReturnToCover calling RemoveFirstPoint()");
             movementScript.RemoveFirstPoint();
             coverFinder.nextCover = coverFinder.currentCover;
             movementScript.AddPointToList(coverFinder.currentCover.transform.position - coverOffset);
@@ -112,17 +114,6 @@ public class DecisionMakingScript : MonoBehaviour
         if(gameObject.transform.position.z > player.transform.position.z + zOffset || gameObject.transform.position.z < player.transform.position.z - zOffset)
             return true;
 
-        return false;
-    }
-
-    public bool CheckIfAllyMoving()
-    {
-        for(int i = 0; i < allyAgents.Count; i++)
-        {
-            DecisionMakingScript script = allyAgents[i].GetComponent<DecisionMakingScript>();
-            if (script.moveToCover)
-                return true;
-        }
         return false;
     }
 
@@ -179,6 +170,8 @@ public class DecisionMakingScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Stopwatch alarmWatch = new Stopwatch();
+        alarmWatch.Start();
         if (agentScript.dead)
             return;
 
@@ -188,13 +181,14 @@ public class DecisionMakingScript : MonoBehaviour
         {
             underAttack = true;
             alarm = true;
-            emotion.AddAdrenaline(1);
+            emotion.AddAdrenaline(2);
         }
         if (playerScript.attackedCover == coverFinder.currentCover && coverFinder.nearCover)
         {
             coverUnderAttack = true;
             alarm = true;
-            emotion.AddAdrenaline(1);
+            emotion.AddFear(1);
+            emotion.AddAdrenaline(2);
         }
         if (agentScript.ammo <= 0)
         {
@@ -280,8 +274,14 @@ public class DecisionMakingScript : MonoBehaviour
                     movementScript.crouch = true;
             }
         }
+
+        alarmWatch.Stop();
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": Alarms in DecisionMakingScript took " + alarmWatch.Elapsed + "ms to check alarms");
+
         // END OF ALARMS
 
+        Stopwatch decisionWatch = new Stopwatch();
+        decisionWatch.Start();
         // Decisions tree 1
         if (alarmActionTaken == false)
             firstTreeDecision = Random.Range(1, 11);
@@ -353,39 +353,29 @@ public class DecisionMakingScript : MonoBehaviour
             if (agentScript.playerVisible)
                 attack = true;
 
-            if (secondTreeDecision == 1 && coverFinder.currentCover != null && coverFinder.nextCover != null)
+            if (secondTreeDecision == 1 && coverFinder.currentCover != null)
                 returnToCover = true;
             else
-                moveToCover = true;
+                if(coverFinder.nextCover != null)
+                    moveToCover = true;
         }
 
         if (attack)
         {
-            if(CheckIfAllyMoving() && secondTreeDecision < 2)
+            // Will try to attack the player first
+            if (agentScript.playerVisible || secondTreeDecision > 1)
             {
-                agentScript.ChangeActionText("Cover fire as ally moving");
-
-                if (agentScript.playerVisible)
+                // Checking if player is near cover
+                if (agentScript.playerVisible || (playerScript.nearCover && playerScript.crouching == false && playerScript.playerCover.CompareTag("Small Object")))
                     attackPlayer = true;
-                else
-                    attackPlayer = false;
-
-                if (agentScript.playerVisible == false && agentScript.playerCoverVisible)
+                else if (playerScript.playerCover != null && agentScript.playerCoverVisible)
                     attackPlayerCover = true;
-                else
-                    attackPlayerCover = false;
             }
             else
-            if(secondTreeDecision >= 2)
-            {
-                if(agentScript.playerVisible || agentScript.playerCoverVisible)
-                {
-                    if (secondTreeDecision == 2 || (playerScript.nearCover && playerScript.crouching == false))
-                        attackPlayer = true;
-                    else
-                        attackPlayerCover = true;
-                }
-            }
+            if (playerScript.playerCover != null && agentScript.playerCoverVisible)
+                attackPlayerCover = true;
+            else
+                UnityEngine.Debug.Log("Unabel to attack");
         }
 
         if (move)
@@ -404,7 +394,6 @@ public class DecisionMakingScript : MonoBehaviour
                     movementScript.crouch = false;
                     hide = false;
                 }
-
             }
 
             if (secondTreeDecision > 1)
@@ -413,7 +402,10 @@ public class DecisionMakingScript : MonoBehaviour
 
         if (movementScript.inAir)
             hide = false;
-            
+
+        decisionWatch.Stop();
+
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": Decision making in DecisionMakingScript took " + decisionWatch.Elapsed + "ms to make decision");
         // END OF DECISIONS
 
         // Assigning decisions to scripts
@@ -430,8 +422,9 @@ public class DecisionMakingScript : MonoBehaviour
 
             if (agentScript.playerVisible)
                 agentScript.attackPlayer = true;
-            else
-                agentScript.attackCover = true;
+            else 
+                if(playerScript.playerCover != null)
+                    agentScript.attackCover = true;
         }
 
         // MovementScript and CoverFinderScript
@@ -476,12 +469,12 @@ public class DecisionMakingScript : MonoBehaviour
                 MoveToCover();
             }
         }
-
+        else
         if (returnToCover)
         {
             returnToCover = false;
             ReturnToCover();
         }
         // END OF ASSIGNING
-    }
+     }
 }

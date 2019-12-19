@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using System.Diagnostics;
 
 //x -84.23, y 4.3917, z 5.2
 public class AgentScript : MonoBehaviour
@@ -42,19 +43,23 @@ public class AgentScript : MonoBehaviour
     public bool attackCover;
     public bool attackPlayer;
 
+    // Returns true if player is visible or false when not
     private bool PlayerVisible()
     {
+        // Getting the planes from player's camera
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(GameObject.Find("FirstPersonCharacter").GetComponent<Camera>());
+        // Checking if the agent's collider is within the frustum
         if (GeometryUtility.TestPlanesAABB(planes, gameObject.GetComponent<Collider>().bounds))
         {
             RaycastHit hit;
+            // Checking if a Raycast will reach the player
             if (Physics.Raycast(transform.position, (player.transform.position - transform.position), out hit))
             {
                 if (hit.transform.gameObject == player)
                     return true;
                 else
                 {
-                    if (hit.transform.gameObject.CompareTag("Small Object"))
+                    if (hit.transform.gameObject.CompareTag("Small Object") && playerScript.playerCover == hit.transform.gameObject)
                     {
                         playerCoverVisible = true;
 
@@ -72,6 +77,7 @@ public class AgentScript : MonoBehaviour
                             playerCoverVisible = true;
                         else
                             playerCoverVisible = false;
+
                         return false;
                     }
                 }
@@ -88,6 +94,7 @@ public class AgentScript : MonoBehaviour
         actionText.text = text;
     }
 
+    // When hit by player receiving damage.
     public void ReceiveDamage(int amount)
     {
         emotion.AddFear(2);
@@ -99,6 +106,8 @@ public class AgentScript : MonoBehaviour
             health -= amount;
         }
     }
+
+    // Stopping the agent when dead.
     private void Die()
     {
         // Disabling all scripts
@@ -121,6 +130,7 @@ public class AgentScript : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // Shooting
     public void Shoot()
     {
         shootingParticle.Play();
@@ -151,6 +161,7 @@ public class AgentScript : MonoBehaviour
         }
     }
 
+    // Reloading
     IEnumerator Reload()
     {
         reloading = true;
@@ -163,9 +174,12 @@ public class AgentScript : MonoBehaviour
         reloading = false;
     }
 
-    IEnumerator GetHealth()
+    // Agent slowly healing himself
+
+    IEnumerator Heal()
     {
         healthCoolDown = false;
+        health += 1;
         yield return new WaitForSeconds(3);
         healthCoolDown = true;
     }
@@ -201,17 +215,27 @@ public class AgentScript : MonoBehaviour
         else
             return;
 
-        Debug.DrawRay(gameObject.transform.position, gameObject.transform.forward, Color.red, 0.5f);
+        UnityEngine.Debug.DrawRay(gameObject.transform.position, gameObject.transform.forward, Color.red, 0.5f);
 
+        //Stopwatch watch = new Stopwatch();
+        //watch.Start();
         if (PlayerVisible())
+        {
             playerVisible = true;
+
+            UnityEngine.Debug.Log(this.name + ": player visible");
+        }
         else
         {
             playerVisible = false;
             attackPlayer = false;
-            if(playerCoverVisible == false)
+            if (playerCoverVisible == false)
                 shoot = false;
         }
+        //watch.Stop();
+
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": PlayerVisible() function took " + watch.Elapsed + "ms to return a value.");
+
 
         if (health <= 0)
         {
@@ -232,7 +256,7 @@ public class AgentScript : MonoBehaviour
         }
 
         if(health < 100 && healthCoolDown)
-            StartCoroutine(GetHealth());
+            StartCoroutine(Heal());
 
         if(reload)
         {

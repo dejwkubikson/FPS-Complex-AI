@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Diagnostics;
 
 public class PlayerScript : MonoBehaviour
 {
@@ -47,7 +48,7 @@ public class PlayerScript : MonoBehaviour
 
     IEnumerator Reload()
     {
-        Debug.Log("Player reloading.");
+        UnityEngine.Debug.Log("Player reloading.");
         reloading = true;
 
         audioSource.PlayOneShot(reloadSound);
@@ -83,6 +84,9 @@ public class PlayerScript : MonoBehaviour
 
     public void CheckIfNearCover()
     {
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+
         nearCover = false;
         for(int i = 0; i < coversCombined.Count; i++)
         {
@@ -96,6 +100,9 @@ public class PlayerScript : MonoBehaviour
 
         if (nearCover == false)
             playerCover = null;
+
+        watch.Stop();
+        //UnityEngine.Debug.LogWarning("Player: CheckIfNearCover() function took " + watch.Elapsed + "ms to assing a cover.");
     }
 
     public void ReceiveDamage(int amount)
@@ -188,7 +195,7 @@ public class PlayerScript : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.R))
         {
-            Debug.Log("R pressed, ammo " + ammo + " reloading " + reloading);
+            UnityEngine.Debug.Log("R pressed, ammo " + ammo + " reloading " + reloading);
             if (reloading == false && ammo < clipAmount)
                 StartCoroutine(Reload());
         }

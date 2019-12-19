@@ -40,10 +40,10 @@ public class MovementScript : MonoBehaviour
 
         //Debug.Log(Vector3.Distance(currentPos, moveToPoint) + " TO " + moveToPoint);
 
-        if (Vector3.Distance(currentPos, moveToPoint) <= 0)
+        if (Vector3.Distance(currentPos, moveToPoint) <= 1)
             RemoveFirstPoint();
         else
-            if (Vector3.Distance(currentPos, moveToPoint) <= 6 && currentPos.y + 3 < moveToPoint.y)
+            if (Vector3.Distance(currentPos, moveToPoint) <= 4 && currentPos.y + 3 < moveToPoint.y)
             RemoveFirstPoint();
         else
             transform.position = Vector3.MoveTowards(currentPos, moveToPoint, Time.deltaTime * movementSpeed);

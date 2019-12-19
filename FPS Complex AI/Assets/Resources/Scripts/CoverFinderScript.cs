@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Diagnostics;
 
 public class CoverFinderScript : MonoBehaviour
 {
     DecisionMakingScript decisionMaking;
     AgentScript agentScript;
-    
+    MovementScript movementScript;
+
     public List<GameObject> bigObjList;
     public List<GameObject> smallObjList;
     public List<GameObject> coversCombined;
@@ -21,8 +23,6 @@ public class CoverFinderScript : MonoBehaviour
     public bool collidedNxtCover;
     public bool nearCover = false;
 
-    MovementScript movementScript;
-
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.name == "Floor")
@@ -30,7 +30,7 @@ public class CoverFinderScript : MonoBehaviour
 
         if (collision.gameObject.name == "Map border")
         {
-            Debug.Log(gameObject.name + " map border collision calling RemoveFirstPoint()");
+            UnityEngine.Debug.Log(gameObject.name + " map border collision calling RemoveFirstPoint()");
             movementScript.RemoveFirstPoint();
         }
 
@@ -41,7 +41,7 @@ public class CoverFinderScript : MonoBehaviour
         {
             if (collision.gameObject == nextCover || Vector3.Distance(nextCover.transform.position, transform.position) < 5)
             {
-                Debug.Log(gameObject.name + " collision calling RemoveFirstPoint()");
+                UnityEngine.Debug.Log(gameObject.name + " collision calling RemoveFirstPoint()");
                 movementScript.RemoveFirstPoint();
                 currentCover = nextCover;
                 nextCover = null;
@@ -67,7 +67,7 @@ public class CoverFinderScript : MonoBehaviour
         {
             if (collision.gameObject == nextCover)
             {
-                Debug.Log(gameObject.name + " collision stay calling RemoveFirstPoint()");
+                UnityEngine.Debug.Log(gameObject.name + " collision stay calling RemoveFirstPoint()");
                 movementScript.RemoveFirstPoint();
                 currentCover = nextCover;
                 nextCover = null;
@@ -82,60 +82,6 @@ public class CoverFinderScript : MonoBehaviour
             inCollisionTime = 0;
             AvoidObject(collision.gameObject);
         } 
-        /*
-        if (collision.gameObject == lastCollidedWith && movementScript.inAir == false)
-        {
-            Debug.Log("1");
-            inCollisionTime += Time.deltaTime;
-
-            if (movingToCover)
-            {
-                Debug.Log("2");
-                if (inCollisionTime > 0.3f)
-                {
-                    Debug.Log("3");
-                    inCollisionTime = 0.0f;
-                    if (nextCover != null)
-                    {
-                        Debug.Log("4");
-                        if (collision.gameObject == nextCover)
-                        {
-                            Debug.Log("5");
-                            movementScript.RemoveFirstPoint();
-                            currentCover = nextCover;
-                            nextCover = null;
-                            if (visitedCovers.Contains(currentCover) == false)
-                                visitedCovers.Add(currentCover);
-                            movingToCover = false;
-                            decisionMaking.moveToCover = false;
-                            movementScript.MoveBack(3);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log("6");
-                        AvoidObject(collision.gameObject);
-                    }
-                }
-            }
-            else
-            {
-                Debug.Log("7");
-                if (inCollisionTime > 0.3f)
-                {
-                    Debug.Log("8");
-                    inCollisionTime = 0.0f;
-                    movementScript.MoveBack(3);
-                }
-            }
-        }
-        else
-        {
-            movementScript.MoveBack(1);
-            inCollisionTime = 0.0f;
-            lastCollidedWith = collision.gameObject;
-        }*/
-        
     }
 
     private void OnCollisionExit(Collision collision)
@@ -148,8 +94,11 @@ public class CoverFinderScript : MonoBehaviour
     // When colliding with an object constantly the agent will try to avoid it by gettin aroud it or if possible, jumping over.
     public void AvoidObject(GameObject objectToAvoid)
     {
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+
         agentScript.ChangeActionText("Avoiding object");
-        Debug.Log("I, " + gameObject.name +" avoiding " + objectToAvoid);
+        UnityEngine.Debug.Log("I, " + gameObject.name +" avoiding " + objectToAvoid);
 
         bool objOnRight = false;
         bool objOnLeft = false;
@@ -257,10 +206,17 @@ public class CoverFinderScript : MonoBehaviour
             default:
                 break;
         }
+
+        watch.Stop();
+
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": AvoidObject() function took " + watch.Elapsed + "ms to add avoidance path.");
     }
 
     public GameObject GetClosestCoverToHide()
     {
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+
         GameObject closestCover = null;
         float distance = Mathf.Infinity;
 
@@ -300,7 +256,8 @@ public class CoverFinderScript : MonoBehaviour
                 // If the agent is supposed to flank the player
                 if(decisionMaking.flankPlayer)
                 {
-                    if(coversCombined[i].transform.position.z > player.transform.position.z + 20 || coversCombined[i].transform.position.z < player.transform.position.z - 20)
+                    if(coversCombined[i].transform.position.z > player.transform.position.z + 20 ||
+                        coversCombined[i].transform.position.z < player.transform.position.z - 20)
                     {
                         // If the cover will be closer to player on X axis
                         if(coversCombined[i].transform.position.x > gameObject.transform.position.x)
@@ -325,6 +282,10 @@ public class CoverFinderScript : MonoBehaviour
 
         if (closestCover == null)
             closestCover = currentCover;
+
+        watch.Stop();
+
+        //UnityEngine.Debug.LogWarning("Agent " + this.name + ": GetClosestCover() function took " + watch.Elapsed + "ms to return a value");
 
         return closestCover;
     }
@@ -365,20 +326,11 @@ public class CoverFinderScript : MonoBehaviour
     {
         if (nextCover != null)
         {
-            /*if (Vector3.Distance(gameObject.transform.position, nextCover.transform.position) < 3)
+            // In some cases the point could be removed from the path list. Adding it back in
+            if(movementScript.movePathList.Count == 0)
             {
-                nearCover = true;
-                currentCover = nextCover;
-                nextCover = null;
-                decisionMaking.moveToCover = false;
-                if (visitedCovers.Contains(currentCover) == false)
-                    visitedCovers.Add(currentCover);
-
-                agentScript.ChangeActionText("Reached cover");
-
-                Debug.Log("Update calling RemoveFirstPoint()");
-                movementScript.RemoveFirstPoint();
-            }*/
+                movementScript.AddPointToList(nextCover.transform.position);
+            }
         }
 
         if (currentCover != null)
